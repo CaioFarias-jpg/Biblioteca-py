@@ -54,5 +54,16 @@ class Database:
 
         return self
 
-db = Database('livros')
-livros = db.select(["titulo", "autor"]).where({'id' : 1}).exec()
+    def insert(self, fields : dict ={}):
+        values = ''
+        formatted_values = []
+
+        for value in fields.values():
+            if insistance(value, str):
+                value = f"'{value}'"
+            formatted_values
+
+
+
+# db = Database('livros')
+# livros = db.select(["titulo", "autor"]).where({'id' : 1}).exec()
