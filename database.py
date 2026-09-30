@@ -1,8 +1,7 @@
 import mysql.connector
 
-
 class Database:
-    def __init__(self, table: str):
+    def __init__(self, table : str):
         self.__host__ = "localhost"
         self.__user__ = "root"
         self.__password__ = ""
@@ -12,58 +11,83 @@ class Database:
         self.query = ""
 
         self.__initialize__()
+        
 
     def __initialize__(self):
-        self.conn = self.__connection__()
-        self.cursor = self.__create_cursor__()
+        self._conn = self.__connection__()
+        self._cursor = self.__create_cursor__()
 
     def __connection__(self):
         return mysql.connector.connect(
-            host=self.__host__,
-            user=self.__user__,
-            password=self.__password__,
-            database=self.__database__,
+            host = self.__host__,
+            user = self.__user__,
+            password = self.__password__,
+            database = self.__database__,
         )
-
+    
     def __create_cursor__(self):
-        return self.conn.cursor()
+        return self._conn.cursor(dictionary=True)
 
     def exec(self):
+        self.query +=";"
         self._cursor.execute(self.query)
-        self._conn.commit()
+        return self._cursor
 
     def select(self, fields=["*"]):
-        self.query = f"SELECT {self.define_fields(fields)} FROM {self.table};"
-
-    def define_fields(self, fields):
-        items = ""
-
-        for field in fields:
-            items += (
-                f"{field}," if not (field == fields[-1]) else
-                f"{field}"
-            )
-
-        return items
-
-    def where(self, rules = ()):
-        self.query += "WHERE "
-
-        for key, value in rules.items():
-            self.query+= f"{key} LIKE '%{value}%' "
+        self.query = f"SELECT {self.define_fields(fields)} FROM {self.table} "
 
         return self
 
-    def insert(self, fields : dict ={}):
-        values = ''
-        formatted_values = []
+    def define_fields(self, fields):
+        campos = ""
+
+        for field in fields:
+            campos += f"{field}" if field == fields[-1] else f"{field},"
+
+        return campos
+
+    def where(self, rules: dict = None):
+        if not rules:
+            return self
+
+        self.query += "WHERE "
+
+        conditions = []
+
+        for key, value in rules.items():
+            conditions.append(f"{key} = {f"'{value}'" if isinstance(value, str) else f"{value}"}")
+
+        self.query += " AND ".join(conditions)
+
+        return self
+
+    def insert(self, fields:dict=None):
+        if fields is None or len(fields.items()) <= 0:
+            return self
+        values = []
 
         for value in fields.values():
-            if insistance(value, str):
+            if isinstance(value, str):
                 value = f"'{value}'"
-            formatted_values
+            
+            values.append(str(value))
 
+        self.query = f"INSERT INTO {self.table}({', '.join(fields)}) VALUES({",".join(values)})"
+        return self
+    
+    def update(self,*, fields:dict=None, id):
+        values = []
 
+        for value in fields.values():
+            if isinstance(value, str):
+                value = f"'{value}'"
+            
+            values.append(str(value))
 
-# db = Database('livros')
-# livros = db.select(["titulo", "autor"]).where({'id' : 1}).exec()
+        self.query = f"UPDATE {self.table}({', '.join(fields)}) VALUES({",".join(values)})"
+        return self.where({'id': id})
+    
+    def delete(self, id):
+        self.query = f"DELETE FROM {self.table} "
+
+        return self.where({'id': id})
